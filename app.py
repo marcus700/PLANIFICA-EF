@@ -37,29 +37,29 @@ st.subheader("Con Estándares y Desempeños oficiales del MINEDU (1° a 6° de P
 st.write("Herramienta inteligente para diseñar tus documentos curriculares al instante usando tu base de datos.")
 
 # Configuramos la clave API
-api_key = st.secrets["GEMINI_API_KEY"]
-genai.configure(api_key=api_key)
+try:
+    api_key = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=api_key)
+except Exception:
+    st.error("🔑 No se encontró la variable GEMINI_API_KEY en los Secrets de Streamlit.")
 
-# FUNCIÓN DEFINITIVA: Usa exclusivamente la serie 1.5 (compatible con usuarios y claves nuevas)
+# FUNCIÓN DE GENERACIÓN
 def generar_con_gemini(prompt, instrucciones_sistema=""):
-    # Únicamente modelos estables de la serie 1.5 que funcionan para cuentas nuevas
-    modelos_estables = [
+    modelos_a_probar = [
         "gemini-1.5-flash",
         "models/gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
         "gemini-1.5-pro",
         "models/gemini-1.5-pro"
     ]
     
     ultimo_error = None
     
-    for nombre_modelo in modelos_estables:
+    for nombre_modelo in modelos_a_probar:
         try:
             model = genai.GenerativeModel(model_name=nombre_modelo, system_instruction=instrucciones_sistema)
             return model.generate_content(prompt)
         except Exception as e:
             error_msg = str(e)
-            # Si se supera la cuota por minuto (429), se da una pausa de 5 segundos y se reintenta
             if "429" in error_msg or "quota" in error_msg.lower():
                 time.sleep(5)
                 try:
@@ -122,7 +122,8 @@ with tab1:
                 archivo_word_u = crear_archivo_word(resultado_u)
                 st.download_button(label="📄 Descargar Unidad en Word (.docx)", data=archivo_word_u, file_name=f"Unidad_MINEDU_{grado_u.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
-                st.error(f"Error al generar la unidad: {e}")
+                st.error("🔑 Error de autorización con la API Key de Google.")
+                st.warning("Tu clave API actual no tiene acceso a los modelos de Gemini. Genera una clave nueva en Google AI Studio y pégala en los Secrets de Streamlit.")
 
 # --- PESTAÑA 2: SESIONES ---
 with tab2:
@@ -154,7 +155,7 @@ with tab2:
                 archivo_word = crear_archivo_word(resultado_s)
                 st.download_button(label="📄 Descargar Sesión en Word (.docx)", data=archivo_word, file_name=f"Sesion_MINEDU_{grado_s.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
-                st.error(f"Error técnico al generar la sesión: {e}")
+                st.error("🔑 Error de autorización con la API Key de Google. Actualiza tu clave en Google AI Studio.")
 
 # --- PESTAÑA 3: RÚBRICAS ---
 with tab3:
@@ -180,4 +181,4 @@ with tab3:
                 archivo_word_r = crear_archivo_word(resultado_r)
                 st.download_button(label="📄 Descargar Rúbrica en Word (.docx)", data=archivo_word_r, file_name=f"Rubrica_MINEDU_{grado_r.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
-                st.error(f"Error al generar la rúbrica: {e}")
+                st.error("🔑 Error de autorización con la API Key de Google. Actualiza tu clave en Google AI Studio.")
