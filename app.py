@@ -17,6 +17,34 @@ st.write("Herramienta inteligente para diseñar tus documentos curriculares al i
 api_key = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=api_key)
 
+# FUNCIÓN BLINDADA: Detecta automáticamente el modelo disponible en tu API
+def obtener_modelo_gemini(instrucciones_sistema=""):
+    # Lista de nombres posibles en orden de preferencia
+    candidatos = [
+        "models/gemini-2.0-flash",
+        "gemini-2.0-flash",
+        "models/gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "models/gemini-1.5-pro",
+        "gemini-1.5-pro"
+    ]
+    
+    # 1. Intentar buscar en la lista oficial de modelos que soporte tu API Key
+    try:
+        modelos_activos = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        for cand in candidatos:
+            for activo in modelos_activos:
+                if cand == activo or activo.endswith(cand):
+                    return genai.GenerativeModel(model_name=activo, system_instruction=instrucciones_sistema)
+        # Si no coincide con la lista preferida pero hay modelos activos, usa el primero disponible
+        if modelos_activos:
+            return genai.GenerativeModel(model_name=modelos_activos[0], system_instruction=instrucciones_sistema)
+    except Exception:
+        pass
+        
+    # 2. Fallback por defecto si no se pudo listar
+    return genai.GenerativeModel(model_name="gemini-2.0-flash", system_instruction=instrucciones_sistema)
+
 # Función para convertir el texto en archivo de Word (.docx)
 def crear_archivo_word(texto_contenido):
     doc = Document()
@@ -55,11 +83,11 @@ with tab1:
         with st.spinner("Escribiendo la unidad oficial..."):
             try:
                 ciclo_u = obtener_ciclo_minedu(grado_u)
-                instrucciones_u = "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. Diseña una Unidad de Aprendizaje completa que incluya estrictamente: 1. Título de la unidad. 2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado). 3. Propósitos de Aprendizaje basándote en la estructura del CNEB. 4. Secuencia semanal de sesiones (Título y breve descripción)."
+                instrucciones_u = "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. Diseña una Unidad de Aprendizaje completa que incluya strictly: 1. Título de la unidad. 2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado). 3. Propósitos de Aprendizaje basándote en la estructura del CNEB. 4. Secuencia semanal de sesiones (Título y breve descripción)."
                 pedido_u = f"Crea una unidad para {grado_u} ({ciclo_u}) con duración de {duracion_u}. Contexto o problema: {problema_u}"
                 
-                # CORREGIDO: Se cambia "gemini-pro" por "gemini-1.5-flash"
-                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_u)
+                # Obtención dinámica y segura del modelo
+                model = obtener_modelo_gemini(instrucciones_sistema=instrucciones_u)
                 response = model.generate_content(pedido_u)
                 
                 resultado_u = response.text
@@ -92,8 +120,8 @@ with tab2:
                 instrucciones = f"Actúa como un Asistente Pedagógico experto en Educación Física para el nivel PRIMARIA bajo el enfoque oficial del CNEB del MINEDU de Perú. Incluye obligatoriamente el Estándar: {estandar_real} y los Desempeños: {desempenos_texto}. Estructura la Sesión incluyendo de forma ordenada: 1. Datos Informativos. 2. Propósito del Día. 3. Enfoques Transversales. 4. Momentos Pedagógicos (Inicio, Desarrollo con variantes e hidratación, y Cierre con higiene y metacognición). 5. Criterios de Evaluación."
                 pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
                 
-                # CORREGIDO: Se cambia "gemini-pro" por "gemini-1.5-flash"
-                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones)
+                # Obtención dinámica y segura del modelo
+                model = obtener_modelo_gemini(instrucciones_sistema=instrucciones)
                 response = model.generate_content(pedido)
                 
                 resultado_s = response.text
@@ -108,26 +136,4 @@ with tab2:
 with tab3:
     st.write("Diseña instrumentos de evaluación con criterios claros y descriptores por niveles de logro.")
     with st.form("form_rubrica"):
-        grado_r = st.selectbox("🏫 Grado de Primaria:", ["1° de Primaria", "2° de Primaria", "3° de Primaria", "4° de Primaria", "5° de Primaria", "6° de Primaria"], key="r1")
-        competencia_r = st.selectbox("🎯 Competencia a Evaluar:", ["Se desenvuelve de manera autónoma a través de su motricidad", "Asume una vida saludable", "Interactúa a través de sus habilidades sociomotrices"], key="r2")
-        criterio_r = st.text_input("📊 Desempeño o criterio específico a evaluar:", placeholder="Ej. Lanzamiento de precisión con balones o trabajo en equipo.")
-        boton_rubrica = st.form_submit_button("📊 Generar Rúbrica en Word")
-
-    if boton_rubrica and criterio_r:
-        with st.spinner("Escribiendo la rúbrica oficial..."):
-            try:
-                ciclo_r = obtener_ciclo_minedu(grado_r)
-                instrucciones_r = "Actúa como un Evaluador Pedagógico experto en Educación Física para Primaria bajo los lineamientos del CNEB del MINEDU. Diseña una rúbrica analítica estructurada para evaluar el desempeño solicitado. Incluye los cuatro niveles de logro oficiales: En Inicio, En Proceso, Logrado y Logro Destacado."
-                pedido_r = f"Crea una rúbrica de evaluación para {grado_r} ({ciclo_r}). Competencia: {competencia_r}. Actividad/Desempeño específico a evaluar: {criterio_r}"
-                
-                # CORREGIDO: Se cambia "gemini-pro" por "gemini-1.5-flash"
-                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_r)
-                response = model.generate_content(pedido_r)
-                
-                resultado_r = response.text
-                st.success("¡Rúbrica generada con éxito!")
-                st.markdown(resultado_r)
-                archivo_word_r = crear_archivo_word(resultado_r)
-                st.download_button(label="📄 Descargar Rúbrica en Word (.docx)", data=archivo_word_r, file_name=f"Rubrica_MINEDU_{grado_r.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-            except Exception as e:
-                st.error(f"Error: {e}")
+        grado_r = st.selectbox("🏫 Grado de Primaria:", ["1°
