@@ -4,10 +4,10 @@ from google.genai import types
 from docx import Document
 import io
 
-# Importamos la base de datos oficial completa que acabas de subir
+# Importamos la base de datos oficial completa
 from cneb_datos import CNEB_PRIMARIA
 
-# 1. Configuración de la Plataforma con tu enfoque MINEDU
+# 1. Configuración de la Plataforma
 st.set_page_config(page_title="Generador CNEB Primaria", page_icon="🏃‍♂️", layout="centered")
 
 st.title("🏃 Generador CNEB - Educación Física (Primaria)")
@@ -47,7 +47,7 @@ with tab1:
     st.write("Estructura una unidad didáctica completa para varias semanas basada en necesidades del contexto escolar.")
     with st.form("form_unidad"):
         grado_u = st.selectbox("🏫 Grado de Primaria:", ["1° de Primaria", "2° de Primaria", "3° de Primaria", "4° de Primaria", "5° de Primaria", "6° de Primaria"], key="u1")
-        duracion_u = st.selectbox("⏱️ Duración de la Unidad:", ["3 Semanas (3 sesiones)", "4 Semanas (4 sesiones)", "5 Semanas (5 sesiones)"], key="u2")
+        duracion_u = st.selectbox("⏱️ Duración de la Unidad:", ["4 Semanas (4 sesiones)", "5 Semanas (5 sesiones)", "6 Semanas (6 sesiones)"], key="u2")
         problema_u = st.text_area("📋 Describe el problema del contexto o interés de los niños:", placeholder="Ej. Los estudiantes muestran dificultades para trabajar en equipo y respetar reglas en los juegos del recreo.", key="u3")
         boton_unidad = st.form_submit_button("📂 Generar Unidad en Word")
 
@@ -77,7 +77,8 @@ with tab1:
                 
                 archivo_word_u = crear_archivo_word(resultado_u)
                 st.download_button(label="📄 Descargar Unidad en Word (.docx)", data=archivo_word_u, file_name=f"Unidad_MINEDU_{grado_u.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-            except Exception as e: st.error(f"Error: {e}")
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 # --- PESTAÑA 2: SESIONES ---
 with tab2:
@@ -96,7 +97,7 @@ with tab2:
                 client = genai.Client(api_key=api_key)
                 ciclo_s = obtener_ciclo_minedu(grado_s)
                 
-                # Extraemos de forma inteligente los datos reales de tu archivo cneb_datos.py
+                # Extraemos los datos reales de tu archivo cneb_datos.py de forma segura
                 estandar_real = CNEB_PRIMARIA.get(competencia_s, {}).get("estandares", {}).get(ciclo_s, "Estándar general del ciclo.")
                 desempenos_reales = CNEB_PRIMARIA.get(competencia_s, {}).get("desempenos", {}).get(grado_s, ["Desempeños generales del grado."])
                 desempenos_texto = "\n".join(desempenos_reales)
@@ -126,7 +127,8 @@ with tab2:
                 
                 archivo_word = crear_archivo_word(resultado_s)
                 st.download_button(label="📄 Descargar Sesión en Word (.docx)", data=archivo_word, file_name=f"Sesion_MINEDU_{grado_s.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-            except Exception as e: st.error(f"Error técnico o de datos: {e}")
+            except Exception as e:
+                st.error(f"Error técnico o de datos: {e}")
 
 # --- PESTAÑA 3: RÚBRICAS ---
 with tab3:
