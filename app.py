@@ -58,8 +58,8 @@ with tab1:
                 instrucciones_u = "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. Diseña una Unidad de Aprendizaje completa que incluya estrictamente: 1. Título de la unidad. 2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado). 3. Propósitos de Aprendizaje basándote en la estructura del CNEB. 4. Secuencia semanal de sesiones (Título y breve descripción)."
                 pedido_u = f"Crea una unidad para {grado_u} ({ciclo_u}) con duración de {duracion_u}. Contexto o problema: {problema_u}"
                 
-                # Se cambió al modelo universal gemini-pro compatible con v1beta
-                model = genai.GenerativeModel(model_name="gemini-pro", system_instruction=instrucciones_u)
+                # CORREGIDO: Se cambia "gemini-pro" por "gemini-1.5-flash"
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_u)
                 response = model.generate_content(pedido_u)
                 
                 resultado_u = response.text
@@ -92,8 +92,8 @@ with tab2:
                 instrucciones = f"Actúa como un Asistente Pedagógico experto en Educación Física para el nivel PRIMARIA bajo el enfoque oficial del CNEB del MINEDU de Perú. Incluye obligatoriamente el Estándar: {estandar_real} y los Desempeños: {desempenos_texto}. Estructura la Sesión incluyendo de forma ordenada: 1. Datos Informativos. 2. Propósito del Día. 3. Enfoques Transversales. 4. Momentos Pedagógicos (Inicio, Desarrollo con variantes e hidratación, y Cierre con higiene y metacognición). 5. Criterios de Evaluación."
                 pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
                 
-                # Se cambió al modelo universal gemini-pro compatible con v1beta
-                model = genai.GenerativeModel(model_name="gemini-pro", system_instruction=instrucciones)
+                # CORREGIDO: Se cambia "gemini-pro" por "gemini-1.5-flash"
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones)
                 response = model.generate_content(pedido)
                 
                 resultado_s = response.text
@@ -120,8 +120,8 @@ with tab3:
                 instrucciones_r = "Actúa como un Evaluador Pedagógico experto en Educación Física para Primaria bajo los lineamientos del CNEB del MINEDU. Diseña una rúbrica analítica estructurada para evaluar el desempeño solicitado. Incluye los cuatro niveles de logro oficiales: En Inicio, En Proceso, Logrado y Logro Destacado."
                 pedido_r = f"Crea una rúbrica de evaluación para {grado_r} ({ciclo_r}). Competencia: {competencia_r}. Actividad/Desempeño específico a evaluar: {criterio_r}"
                 
-                # Se cambió al modelo universal gemini-pro compatible con v1beta
-                model = genai.GenerativeModel(model_name="gemini-pro", system_instruction=instrucciones_r)
+                # CORREGIDO: Se cambia "gemini-pro" por "gemini-1.5-flash"
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_r)
                 response = model.generate_content(pedido_r)
                 
                 resultado_r = response.text
