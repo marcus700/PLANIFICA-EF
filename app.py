@@ -59,8 +59,8 @@ with tab1:
                 instrucciones_u = "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. Diseña una Unidad de Aprendizaje completa que incluya estrictamente: 1. Título de la unidad. 2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado). 3. Propósitos de Aprendizaje basándote en la estructura del CNEB. 4. Secuencia semanal de sesiones (Título y breve descripción)."
                 pedido_u = f"Crea una unidad para {grado_u} ({ciclo_u}) con duración de {duracion_u}. Contexto o problema: {problema_u}"
                 
-                # Usamos gemini-1.5-flash que tiene máxima compatibilidad
-                response = client.models.generate_content(model='gemini-1.5-flash', contents=pedido_u, config=types.GenerateContentConfig(system_instruction=instrucciones_u, temperature=0.7))
+                # Formato de texto directo para forzar compatibilidad
+                response = client.models.generate_content(model="gemini-1.5-flash", contents=pedido_u, config=types.GenerateContentConfig(system_instruction=instrucciones_u, temperature=0.7))
                 resultado_u = response.text
                 st.success("¡Unidad Curricular generada con éxito!")
                 st.markdown(resultado_u)
@@ -90,10 +90,10 @@ with tab2:
                 desempenos_texto = " | ".join(desempenos_reales)
                 
                 instrucciones = f"Actúa como un Asistente Pedagógico experto en Educación Física para el nivel PRIMARIA bajo el enfoque oficial del CNEB del MINEDU de Perú. Incluye obligatoriamente el Estándar: {estandar_real} y los Desempeños: {desempenos_texto}. Estructura la Sesión incluyendo de forma ordenada: 1. Datos Informativos. 2. Propósito del Día. 3. Enfoques Transversales. 4. Momentos Pedagógicos (Inicio, Desarrollo con variantes e hidratación, y Cierre con higiene y metacognición). 5. Criterios de Evaluación."
-                pedido = f"Diseña una sesión de {duracion_s} minutes para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
+                pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
                 
-                # Usamos gemini-1.5-flash que tiene máxima compatibilidad
-                response = client.models.generate_content(model='gemini-1.5-flash', contents=pedido, config=types.GenerateContentConfig(system_instruction=instrucciones, temperature=0.7))
+                # Formato de texto directo para forzar compatibilidad
+                response = client.models.generate_content(model="gemini-1.5-flash", contents=pedido, config=types.GenerateContentConfig(system_instruction=instrucciones, temperature=0.7))
                 resultado_s = response.text
                 st.success("¡📋 Sesión Generada (MINEDU) con éxito!")
                 st.markdown(resultado_s)
@@ -119,8 +119,8 @@ with tab3:
                 instrucciones_r = "Actúa como un Evaluador Pedagógico experto en Educación Física para Primaria bajo los lineamientos del CNEB del MINEDU. Diseña una rúbrica analítica estructurada para evaluar el desempeño solicitado. Incluye los cuatro niveles de logro oficiales: En Inicio, En Proceso, Logrado y Logro Destacado."
                 pedido_r = f"Crea una rúbrica de evaluación para {grado_r} ({ciclo_r}). Competencia: {competencia_r}. Actividad/Desempeño específico a evaluar: {criterio_r}"
                 
-                # Usamos gemini-1.5-flash que tiene máxima compatibilidad
-                response = client.models.generate_content(model='gemini-1.5-flash', contents=pedido_r, config=types.GenerateContentConfig(system_instruction=instrucciones_r, temperature=0.7))
+                # Formato de texto directo para forzar compatibilidad
+                response = client.models.generate_content(model="gemini-1.5-flash", contents=pedido_r, config=types.GenerateContentConfig(system_instruction=instrucciones_r, temperature=0.7))
                 resultado_r = response.text
                 st.success("¡Rúbrica generada con éxito!")
                 st.markdown(resultado_r)
