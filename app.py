@@ -36,48 +36,35 @@ st.title("🏃 Generador CNEB - Educación Física (Primaria)")
 st.subheader("Con Estándares y Desempeños oficiales del MINEDU (1° a 6° de Primaria)")
 st.write("Herramienta inteligente para diseñar tus documentos curriculares al instante usando tu base de datos.")
 
-# Configuramos la clave API con la librería estándar de Google
+# Configuramos la clave API
 api_key = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=api_key)
 
-# FUNCIÓN BLINDADA CON AUTO-FALLBACK: Prueba modelos activos secuencialmente
-def generar_respuesta_gemini(prompt, instrucciones_sistema=""):
-    # Modelos universales ordenados por compatibilidad
-    modelos_a_probar = [
-        "gemini-1.5-flash",
-        "models/gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "models/gemini-1.5-pro",
-        "gemini-1.5-flash-8b"
-    ]
-    
-    ultimo_error = None
-    
-    for nombre_modelo in modelos_a_probar:
-        try:
-            model = genai.GenerativeModel(model_name=nombre_modelo, system_instruction=instrucciones_sistema)
-            response = model.generate_content(prompt)
-            return response
-        except Exception as e:
-            error_msg = str(e)
-            # Si el modelo no está disponible para usuarios nuevos (404/deprecated), prueba el siguiente
-            if "404" in error_msg or "no longer available" in error_msg.lower():
-                ultimo_error = e
-                continue
-            # Si supera la cuota por segundo (429), espera 5 segundos y reintenta
-            elif "429" in error_msg or "quota" in error_msg.lower():
-                time.sleep(5)
-                try:
-                    return model.generate_content(prompt)
-                except Exception as ex:
-                    ultimo_error = ex
-                    continue
-            else:
-                ultimo_error = e
-                continue
+# FUNCIÓN DINÁMICA: Pregunta a Google qué modelos están realmente activos para tu API Key
+def obtener_modelo_activo(instrucciones_sistema=""):
+    try:
+        modelos_disponibles = []
+        # Listamos directamente los modelos que admite la clave API
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                modelos_disponibles.append(m.name)
+        
+        if modelos_disponibles:
+            # Priorizar versiones flash o pro de la lista devuelta por Google
+            for m_nombre in modelos_disponibles:
+                if "flash" in m_nombre.lower():
+                    return genai.GenerativeModel(model_name=m_nombre, system_instruction=instrucciones_sistema)
+            for m_nombre in modelos_disponibles:
+                if "pro" in m_nombre.lower():
+                    return genai.GenerativeModel(model_name=m_nombre, system_instruction=instrucciones_sistema)
+            
+            # Si no hay coincidencias de nombre, usa el primer modelo disponible devuelto
+            return genai.GenerativeModel(model_name=modelos_disponibles[0], system_instruction=instrucciones_sistema)
+    except Exception:
+        pass
 
-    # Si todos los intentos fallan, arroja la última excepción capturada
-    raise ultimo_error
+    # Fallback por defecto si no pudo listar
+    return genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_sistema)
 
 # Función para convertir el texto en archivo de Word (.docx)
 def crear_archivo_word(texto_contenido):
@@ -120,7 +107,8 @@ with tab1:
                 instrucciones_u = "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. Diseña una Unidad de Aprendizaje completa que incluya estrictamente: 1. Título de la unidad. 2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado). 3. Propósitos de Aprendizaje basándote en la estructura del CNEB. 4. Secuencia semanal de sesiones (Título y breve descripción)."
                 pedido_u = f"Crea una unidad para {grado_u} ({ciclo_u}) con duración de {duracion_u}. Contexto o problema: {problema_u}"
                 
-                response = generar_respuesta_gemini(pedido_u, instrucciones_sistema=instrucciones_u)
+                model = obtener_modelo_activo(instrucciones_sistema=instrucciones_u)
+                response = model.generate_content(pedido_u)
                 
                 resultado_u = response.text
                 st.success("¡Unidad Curricular generada con éxito!")
@@ -129,6 +117,7 @@ with tab1:
                 st.download_button(label="📄 Descargar Unidad en Word (.docx)", data=archivo_word_u, file_name=f"Unidad_MINEDU_{grado_u.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
                 st.error(f"Error al generar la unidad: {e}")
+                st.info("💡 **Tip de solución:** Si el error 404 continúa, genera una nueva API Key gratuita en [Google AI Studio](https://aistudio.google.com/) y actualízala en los Secrets de Streamlit (`GEMINI_API_KEY`).")
 
 # --- PESTAÑA 2: SESIONES ---
 with tab2:
@@ -152,7 +141,8 @@ with tab2:
                 instrucciones = f"Actúa como un Asistente Pedagógico experto en Educación Física para el nivel PRIMARIA bajo el enfoque oficial del CNEB del MINEDU de Perú. Incluye obligatoriamente el Estándar: {estandar_real} y los Desempeños: {desempenos_texto}. Estructura la Sesión incluyendo de forma ordenada: 1. Datos Informativos. 2. Propósito del Día. 3. Enfoques Transversales. 4. Momentos Pedagógicos (Inicio, Desarrollo con variantes e hidratación, y Cierre con higiene y metacognición). 5. Criterios de Evaluación."
                 pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
                 
-                response = generar_respuesta_gemini(pedido, instrucciones_sistema=instrucciones)
+                model = obtener_modelo_activo(instrucciones_sistema=instrucciones)
+                response = model.generate_content(pedido)
                 
                 resultado_s = response.text
                 st.success("¡📋 Sesión Generada (MINEDU) con éxito!")
@@ -178,7 +168,8 @@ with tab3:
                 instrucciones_r = "Actúa como un Evaluador Pedagógico experto en Educación Física para Primaria bajo los lineamientos del CNEB del MINEDU. Diseña una rúbrica analítica estructurada para evaluar el desempeño solicitado. Incluye los cuatro niveles de logro oficiales: En Inicio, En Proceso, Logrado y Logro Destacado."
                 pedido_r = f"Crea una rúbrica de evaluación para {grado_r} ({ciclo_r}). Competencia: {competencia_r}. Actividad/Desempeño específico a evaluar: {criterio_r}"
                 
-                response = generar_respuesta_gemini(pedido_r, instrucciones_sistema=instrucciones_r)
+                model = obtener_modelo_activo(instrucciones_sistema=instrucciones_r)
+                response = model.generate_content(pedido_r)
                 
                 resultado_r = response.text
                 st.success("¡Rúbrica generada con éxito!")
