@@ -1,6 +1,5 @@
 import streamlit as st
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from docx import Document
 import io
 
@@ -14,8 +13,9 @@ st.title("🏃 Generador CNEB - Educación Física (Primaria)")
 st.subheader("Con Estándares y Desempeños oficiales del MINEDU (1° a 6° de Primaria)")
 st.write("Herramienta inteligente para diseñar tus documentos curriculares al instante usando tu base de datos.")
 
-# Enlace automático a la clave secreta guardada de forma segura en Streamlit
+# Configuramos la clave API con la librería estándar de Google
 api_key = st.secrets["GEMINI_API_KEY"]
+genai.configure(api_key=api_key)
 
 # Función para convertir el texto en archivo de Word (.docx)
 def crear_archivo_word(texto_contenido):
@@ -54,13 +54,14 @@ with tab1:
     if boton_unidad and problema_u:
         with st.spinner("Escribiendo la unidad oficial..."):
             try:
-                client = genai.Client(api_key=api_key)
                 ciclo_u = obtener_ciclo_minedu(grado_u)
                 instrucciones_u = "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. Diseña una Unidad de Aprendizaje completa que incluya estrictamente: 1. Título de la unidad. 2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado). 3. Propósitos de Aprendizaje basándote en la estructura del CNEB. 4. Secuencia semanal de sesiones (Título y breve descripción)."
                 pedido_u = f"Crea una unidad para {grado_u} ({ciclo_u}) con duración de {duracion_u}. Contexto o problema: {problema_u}"
                 
-                # Formato de texto directo para forzar compatibilidad
-                response = client.models.generate_content(model="gemini-1.5-flash", contents=pedido_u, config=types.GenerateContentConfig(system_instruction=instrucciones_u, temperature=0.7))
+                # Llamado compatible universal
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_u)
+                response = model.generate_content(pedido_u)
+                
                 resultado_u = response.text
                 st.success("¡Unidad Curricular generada con éxito!")
                 st.markdown(resultado_u)
@@ -83,7 +84,6 @@ with tab2:
     if boton_sesion and tema_s and materiales_s:
         with st.spinner("Escribiendo la sesión oficial..."):
             try:
-                client = genai.Client(api_key=api_key)
                 ciclo_s = obtener_ciclo_minedu(grado_s)
                 estandar_real = CNEB_PRIMARIA.get(competencia_s, {}).get("estandares", {}).get(ciclo_s, "Estándar general.")
                 desempenos_reales = CNEB_PRIMARIA.get(competencia_s, {}).get("desempenos", {}).get(grado_s, ["Desempeños generales."])
@@ -92,8 +92,10 @@ with tab2:
                 instrucciones = f"Actúa como un Asistente Pedagógico experto en Educación Física para el nivel PRIMARIA bajo el enfoque oficial del CNEB del MINEDU de Perú. Incluye obligatoriamente el Estándar: {estandar_real} y los Desempeños: {desempenos_texto}. Estructura la Sesión incluyendo de forma ordenada: 1. Datos Informativos. 2. Propósito del Día. 3. Enfoques Transversales. 4. Momentos Pedagógicos (Inicio, Desarrollo con variantes e hidratación, y Cierre con higiene y metacognición). 5. Criterios de Evaluación."
                 pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
                 
-                # Formato de texto directo para forzar compatibilidad
-                response = client.models.generate_content(model="gemini-1.5-flash", contents=pedido, config=types.GenerateContentConfig(system_instruction=instrucciones, temperature=0.7))
+                # Llamado compatible universal
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones)
+                response = model.generate_content(pedido)
+                
                 resultado_s = response.text
                 st.success("¡📋 Sesión Generada (MINEDU) con éxito!")
                 st.markdown(resultado_s)
@@ -114,13 +116,14 @@ with tab3:
     if boton_rubrica and criterio_r:
         with st.spinner("Escribiendo la rúbrica oficial..."):
             try:
-                client = genai.Client(api_key=api_key)
                 ciclo_r = obtener_ciclo_minedu(grado_r)
                 instrucciones_r = "Actúa como un Evaluador Pedagógico experto en Educación Física para Primaria bajo los lineamientos del CNEB del MINEDU. Diseña una rúbrica analítica estructurada para evaluar el desempeño solicitado. Incluye los cuatro niveles de logro oficiales: En Inicio, En Proceso, Logrado y Logro Destacado."
                 pedido_r = f"Crea una rúbrica de evaluación para {grado_r} ({ciclo_r}). Competencia: {competencia_r}. Actividad/Desempeño específico a evaluar: {criterio_r}"
                 
-                # Formato de texto directo para forzar compatibilidad
-                response = client.models.generate_content(model="gemini-1.5-flash", contents=pedido_r, config=types.GenerateContentConfig(system_instruction=instrucciones_r, temperature=0.7))
+                # Llamado compatible universal
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_r)
+                response = model.generate_content(pedido_r)
+                
                 resultado_r = response.text
                 st.success("¡Rúbrica generada con éxito!")
                 st.markdown(resultado_r)
