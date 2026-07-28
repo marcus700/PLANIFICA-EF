@@ -47,34 +47,21 @@ with tab1:
     st.write("Estructura una unidad didáctica completa para varias semanas basada en necesidades del contexto escolar.")
     with st.form("form_unidad"):
         grado_u = st.selectbox("🏫 Grado de Primaria:", ["1° de Primaria", "2° de Primaria", "3° de Primaria", "4° de Primaria", "5° de Primaria", "6° de Primaria"], key="u1")
-        duracion_u = st.selectbox("⏱️ Duración de la Unidad:", ["4 Semanas (4 sesiones)", "6 Semanas (6 sesiones)", "8 Semanas (8 sesiones)"], key="u2")
+        duracion_u = st.selectbox("⏱️ Duración de la Unidad:", ["4 Semanas (4 sesiones)", "5 Semanas (5 sesiones)", "8 Semanas (8 sesiones)"], key="u2")
         problema_u = st.text_area("📋 Describe el problema del contexto o interés de los niños:", placeholder="Ej. Los estudiantes muestran dificultades para trabajar en equipo y respetar reglas en los juegos del recreo.", key="u3")
         boton_unidad = st.form_submit_button("📂 Generar Unidad en Word")
 
     if boton_unidad and problema_u:
-        with st.spinner("Escribiendo la unidad oficial según el CNEB de Educación Física Primaria..."):
+        with st.spinner("Escribiendo la unidad oficial..."):
             try:
                 client = genai.Client(api_key=api_key)
                 ciclo_u = obtener_ciclo_minedu(grado_u)
-                
-                instrucciones_u = (
-                    "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. "
-                    "Diseña una Unidad de Aprendizaje completa que incluya estrictamente:\n"
-                    "1. Título de la unidad (significativo y retador).\n"
-                    "2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado).\n"
-                    "3. Propósitos de Aprendizaje basándote y haciendo referencia a la estructura del CNEB.\n"
-                    "4. Secuencia semanal de sesiones (Título y una breve descripción pedagógica de cada clase)."
-                )
+                instrucciones_u = "Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque del CNEB del MINEDU de Perú. Diseña una Unidad de Aprendizaje completa que incluya estrictamente: 1. Título de la unidad. 2. Situación Significativa (Contexto real, Reto en forma de pregunta y Producto esperado). 3. Propósitos de Aprendizaje basándote en la estructura del CNEB. 4. Secuencia semanal de sesiones (Título y breve descripción)."
                 pedido_u = f"Crea una unidad para {grado_u} ({ciclo_u}) con duración de {duracion_u}. Contexto o problema: {problema_u}"
-                
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash', contents=pedido_u,
-                    config=types.GenerateContentConfig(system_instruction=instrucciones_u, temperature=0.7)
-                )
+                response = client.models.generate_content(model='gemini-2.5-flash', contents=pedido_u, config=types.GenerateContentConfig(system_instruction=instrucciones_u, temperature=0.7))
                 resultado_u = response.text
                 st.success("¡Unidad Curricular generada con éxito!")
                 st.markdown(resultado_u)
-                
                 archivo_word_u = crear_archivo_word(resultado_u)
                 st.download_button(label="📄 Descargar Unidad en Word (.docx)", data=archivo_word_u, file_name=f"Unidad_MINEDU_{grado_u.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
@@ -92,39 +79,21 @@ with tab2:
         boton_sesion = st.form_submit_button("🚀 Generar Sesión de Aprendizaje CNEB Primaria")
 
     if boton_sesion and tema_s and materiales_s:
-        with st.spinner("Escribiendo la sesión oficial según el CNEB de Educación Física Primaria..."):
+        with st.spinner("Escribiendo la sesión oficial..."):
             try:
                 client = genai.Client(api_key=api_key)
                 ciclo_s = obtener_ciclo_minedu(grado_s)
+                estandar_real = CNEB_PRIMARIA.get(competencia_s, {}).get("estandares", {}).get(ciclo_s, "Estándar general.")
+                desempenos_reales = CNEB_PRIMARIA.get(competencia_s, {}).get("desempenos", {}).get(grado_s, ["Desempeños generales."])
+                desempenos_texto = " | ".join(desempenos_reales)
                 
-                # Extraemos los datos reales de tu archivo cneb_datos.py de forma segura
-                estandar_real = CNEB_PRIMARIA.get(competencia_s, {}).get("estandares", {}).get(ciclo_s, "Estándar general del ciclo.")
-                desempenos_reales = CNEB_PRIMARIA.get(competencia_s, {}).get("desempenos", {}).get(grado_s, ["Desempeños generales del grado."])
-                desempenos_texto = "\n".join(desempenos_reales)
+                instrucciones = f"Actúa como un Asistente Pedagógico experto en Educación Física para el nivel PRIMARIA bajo el enfoque oficial del CNEB del MINEDU de Perú. Incluye obligatoriamente el Estándar: {estandar_real} y los Desempeños: {desempenos_texto}. Estructura la Sesión incluyendo de forma ordenada: 1. Datos Informativos. 2. Propósito del Día. 3. Enfoques Transversales. 4. Momentos Pedagógicos (Inicio, Desarrollo con variantes e hidratación, y Cierre con higiene y metacognición). 5. Criterios de Evaluación."
+                pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
                 
-                instrucciones = (
-                    f"Actúa como un Asistente Pedagógico experto en Educación Física para el nivel PRIMARIA bajo el enfoque oficial del CNEB del MINEDU de Perú.\n\n"
-                    f"Para esta sesión de clase, debes incluir y fundamentar de forma OBLIGATORIA el siguiente Estándar y Desempeños oficiales que te proveo directamente del currículo:\n"
-                    f"ESTÁNDAR DEL CICLO ({ciclo_s}): {estandar_real}\n"
-                    f"DESEMPEÑOS OFICIALES DEL GRADO ({grado_s}):\n{desempenos_texto}\n\n"
-                    f"Estructura la Sesión de Aprendizaje incluyendo de forma ordenada:\n"
-                    f"1. Datos Informativos.\n"
-                    f"2. Propósito del Día (Utilizando textualmente el Estándar y Desempeños provistos arriba).\n"
-                    f"3. Enfoques Transversales.\n"
-                    f"4. Momentos Pedagógicos Desarrollados (Inicio con saberes previos; Desarrollo con explicaciones físicas, variantes motrices e hidratación; Cierre con vuelta a la calma, higiene corporal de lavado de manos y metacognición).\n"
-                    f"5. Criterios de Evaluación y el instrumento recomendado."
-                )
-                
-                pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Competencia principal: {competencia_s}. Tema/Propósito motriz específico de hoy: {tema_s}. Materiales con los que cuento en el patio: {materiales_s}."
-                
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash', contents=pedido,
-                    config=types.GenerateContentConfig(system_instruction=instrucciones, temperature=0.7)
-                )
+                response = client.models.generate_content(model='gemini-2.5-flash', contents=pedido, config=types.GenerateContentConfig(system_instruction=instrucciones, temperature=0.7))
                 resultado_s = response.text
                 st.success("¡📋 Sesión Generada (MINEDU) con éxito!")
                 st.markdown(resultado_s)
-                
                 archivo_word = crear_archivo_word(resultado_s)
                 st.download_button(label="📄 Descargar Sesión en Word (.docx)", data=archivo_word, file_name=f"Sesion_MINEDU_{grado_s.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
@@ -140,11 +109,17 @@ with tab3:
         boton_rubrica = st.form_submit_button("📊 Generar Rúbrica en Word")
 
     if boton_rubrica and criterio_r:
-        with st.spinner("Escribiendo la rúbrica oficial según el CNEB de Educación Física Primaria..."):
+        with st.spinner("Escribiendo la rúbrica oficial..."):
             try:
                 client = genai.Client(api_key=api_key)
                 ciclo_r = obtener_ciclo_minedu(grado_r)
-                
-                instrucciones_r = (
-                    "Actúa como un Evaluador Pedagógico experto en Educación Física para Primaria bajo los lineamientos del CNEB del MINEDU. "
-                    "Diseña una rúbrica analítica estructurada para evaluar el desempeño solicitado. Incluye de forma obligatoria los descriptores "
+                instrucciones_r = "Actúa como un Evaluador Pedagógico experto en Educación Física para Primaria bajo los lineamientos del CNEB del MINEDU. Diseña una rúbrica analítica estructurada para evaluar el desempeño solicitado. Incluye los cuatro niveles de logro oficiales: En Inicio, En Proceso, Logrado y Logro Destacado."
+                pedido_r = f"Crea una rúbrica de evaluación para {grado_r} ({ciclo_r}). Competencia: {competencia_r}. Actividad/Desempeño específico a evaluar: {criterio_r}"
+                response = client.models.generate_content(model='gemini-2.5-flash', contents=pedido_r, config=types.GenerateContentConfig(system_instruction=instrucciones_r, temperature=0.7))
+                resultado_r = response.text
+                st.success("¡Rúbrica generada con éxito!")
+                st.markdown(resultado_r)
+                archivo_word_r = crear_archivo_word(resultado_r)
+                st.download_button(label="📄 Descargar Rúbrica en Word (.docx)", data=archivo_word_r, file_name=f"Rubrica_MINEDU_{grado_r.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            except Exception as e:
+                st.error(f"Error: {e}")
