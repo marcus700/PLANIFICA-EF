@@ -47,7 +47,7 @@ with tab1:
     st.write("Estructura una unidad didáctica completa para varias semanas basada en necesidades del contexto escolar.")
     with st.form("form_unidad"):
         grado_u = st.selectbox("🏫 Grado de Primaria:", ["1° de Primaria", "2° de Primaria", "3° de Primaria", "4° de Primaria", "5° de Primaria", "6° de Primaria"], key="u1")
-        duracion_u = st.selectbox("⏱️ Duración de la Unidad:", ["4 Semanas (4 sesiones)", "5 Semanas (5 sesiones)", "6 Semanas (6 sesiones)"], key="u2")
+        duracion_u = st.selectbox("⏱️ Duración de la Unidad:", ["4 Semanas (4 sesiones)", "6 Semanas (6 sesiones)", "8 Semanas (8 sesiones)"], key="u2")
         problema_u = st.text_area("📋 Describe el problema del contexto o interés de los niños:", placeholder="Ej. Los estudiantes muestran dificultades para trabajar en equipo y respetar reglas en los juegos del recreo.", key="u3")
         boton_unidad = st.form_submit_button("📂 Generar Unidad en Word")
 
