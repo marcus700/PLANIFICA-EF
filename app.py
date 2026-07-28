@@ -2,11 +2,12 @@ import streamlit as st
 import google.generativeai as genai
 from docx import Document
 import io
+import time
 
 # Importamos la base de datos oficial completa
 from cneb_datos import CNEB_PRIMARIA
 
-# --- LISTAS DE OPCIONES (Para evitar líneas muy largas al copiar/pegar) ---
+# --- LISTAS DE OPCIONES ---
 GRADOS = [
     "1° de Primaria",
     "2° de Primaria",
@@ -39,12 +40,11 @@ st.write("Herramienta inteligente para diseñar tus documentos curriculares al i
 api_key = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=api_key)
 
-# FUNCIÓN BLINDADA: Detecta automáticamente el modelo disponible en tu API
+# FUNCIÓN MEJORADA: Prioriza gemini-1.5-flash que sí tiene cuota gratuita amplia
 def obtener_modelo_gemini(instrucciones_sistema=""):
     candidatos = [
-        "models/gemini-2.0-flash",
-        "gemini-2.0-flash",
         "models/gemini-1.5-flash",
+        "gemini-1.5-flash",
         "gemini-1.5-flash-latest",
         "models/gemini-1.5-pro",
         "gemini-1.5-pro"
@@ -61,7 +61,23 @@ def obtener_modelo_gemini(instrucciones_sistema=""):
     except Exception:
         pass
         
-    return genai.GenerativeModel(model_name="gemini-2.0-flash", system_instruction=instrucciones_sistema)
+    return genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=instrucciones_sistema)
+
+# FUNCIÓN PARA GENERAR CONTENIDO CON REINTENTO SI OCURRE ERROR 429
+def generar_con_reintento(model, prompt):
+    for intento in range(2):
+        try:
+            return model.generate_content(prompt)
+        except Exception as e:
+            error_str = str(e)
+            if "429" in error_str or "quota" in error_str.lower():
+                if intento == 0:
+                    st.warning("⚠️ Límite de velocidad detectado. Esperando 10 segundos para reintentar...")
+                    time.sleep(10)
+                else:
+                    raise e
+            else:
+                raise e
 
 # Función para convertir el texto en archivo de Word (.docx)
 def crear_archivo_word(texto_contenido):
@@ -105,7 +121,7 @@ with tab1:
                 pedido_u = f"Crea una unidad para {grado_u} ({ciclo_u}) con duración de {duracion_u}. Contexto o problema: {problema_u}"
                 
                 model = obtener_modelo_gemini(instrucciones_sistema=instrucciones_u)
-                response = model.generate_content(pedido_u)
+                response = generar_con_reintento(model, pedido_u)
                 
                 resultado_u = response.text
                 st.success("¡Unidad Curricular generada con éxito!")
@@ -113,7 +129,10 @@ with tab1:
                 archivo_word_u = crear_archivo_word(resultado_u)
                 st.download_button(label="📄 Descargar Unidad en Word (.docx)", data=archivo_word_u, file_name=f"Unidad_MINEDU_{grado_u.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
-                st.error(f"Error: {e}")
+                if "429" in str(e):
+                    st.error("⌛ Se superó el límite de consultas gratuitas por minuto de Google. Por favor, espera 20 segundos e intenta de nuevo.")
+                else:
+                    st.error(f"Error: {e}")
 
 # --- PESTAÑA 2: SESIONES ---
 with tab2:
@@ -138,7 +157,7 @@ with tab2:
                 pedido = f"Diseña una sesión de {duracion_s} minutos para {grado_s} ({ciclo_s}). Tema: {tema_s}. Materiales: {materiales_s}."
                 
                 model = obtener_modelo_gemini(instrucciones_sistema=instrucciones)
-                response = model.generate_content(pedido)
+                response = generar_con_reintento(model, pedido)
                 
                 resultado_s = response.text
                 st.success("¡📋 Sesión Generada (MINEDU) con éxito!")
@@ -146,7 +165,10 @@ with tab2:
                 archivo_word = crear_archivo_word(resultado_s)
                 st.download_button(label="📄 Descargar Sesión en Word (.docx)", data=archivo_word, file_name=f"Sesion_MINEDU_{grado_s.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
-                st.error(f"Error técnico o de datos: {e}")
+                if "429" in str(e):
+                    st.error("⌛ Se superó el límite de consultas gratuitas por minuto de Google. Por favor, espera 20 segundos e intenta de nuevo.")
+                else:
+                    st.error(f"Error técnico o de datos: {e}")
 
 # --- PESTAÑA 3: RÚBRICAS ---
 with tab3:
@@ -165,7 +187,7 @@ with tab3:
                 pedido_r = f"Crea una rúbrica de evaluación para {grado_r} ({ciclo_r}). Competencia: {competencia_r}. Actividad/Desempeño específico a evaluar: {criterio_r}"
                 
                 model = obtener_modelo_gemini(instrucciones_sistema=instrucciones_r)
-                response = model.generate_content(pedido_r)
+                response = generar_con_reintento(model, pedido_r)
                 
                 resultado_r = response.text
                 st.success("¡Rúbrica generada con éxito!")
@@ -173,4 +195,7 @@ with tab3:
                 archivo_word_r = crear_archivo_word(resultado_r)
                 st.download_button(label="📄 Descargar Rúbrica en Word (.docx)", data=archivo_word_r, file_name=f"Rubrica_MINEDU_{grado_r.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             except Exception as e:
-                st.error(f"Error: {e}")
+                if "429" in str(e):
+                    st.error("⌛ Se superó el límite de consultas gratuitas por minuto de Google. Por favor, espera 20 segundos e intenta de nuevo.")
+                else:
+                    st.error(f"Error: {e}")
