@@ -48,16 +48,29 @@ try:
 except Exception:
     st.error("🔑 No se encontró la variable GEMINI_API_KEY en los Secrets de Streamlit.")
 
-# FUNCIÓN DE GENERACIÓN CON GEMINI OPTIMIZADA (Alta precisión y sin recortes)
+# FUNCIÓN DE GENERACIÓN CON GEMINI MULTIMODELO (Soporta Gemini 3.6 Flash, 3.5 Flash, 2.5 y 2.0)
 def generar_con_gemini(prompt, instrucciones_sistema=""):
+    # Lista priorizada con los últimos modelos de la familia Gemini
     modelos_a_probar = [
-        "gemini-1.5-pro",        # Intentar primero con el modelo Pro (más detallado)
+        "gemini-3.6-flash",
+        "models/gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "models/gemini-3.5-flash",
+        "gemini-3-flash",
+        "models/gemini-3-flash",
+        "gemini-2.5-pro",
+        "models/gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "models/gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "models/gemini-2.0-flash",
+        "gemini-1.5-pro",
         "models/gemini-1.5-pro",
         "gemini-1.5-flash",
         "models/gemini-1.5-flash"
     ]
     
-    # Configuración para evitar resúmenes y permitir documentos largos completos
+    # Configuración para alta precisión pedagógica y texto sin recortar
     config_generacion = {
         "temperature": 0.2,           # Menor aleatoriedad para máxima fidelidad al CNEB
         "max_output_tokens": 8192     # Límite amplio para generar todas las tablas de las 10 secciones
@@ -223,7 +236,7 @@ with tab1:
         boton_unidad = st.form_submit_button("📂 Generar Unidad de Aprendizaje en Word")
 
     if boton_unidad and problema_u:
-        with st.spinner("Escribiendo la unidad didáctica oficial CNEB..."):
+        with st.spinner("Escribiendo la unidad didáctica oficial CNEB con el modelo más avanzado..."):
             try:
                 ciclo_u = obtener_ciclo_primaria(grado_u)
                 
@@ -234,13 +247,11 @@ with tab1:
                     des_lista = comp_data["desempenos"].get(grado_u, [])
                     cneb_contexto += f"\n\nCOMPETENCIA: {comp_nombre}\nESTÁNDAR OFICIAL ({ciclo_u}):\n{est_texto}\nDESEMPEÑOS OFICIALES ({grado_u}):\n" + "\n".join(des_lista)
 
-                # ==============================================================================
                 # PROMPT MAESTRO COMPLETO INTEGRADO
-                # ==============================================================================
                 prompt_maestro = f"""
 Actúa como un especialista en currículo educativo peruano y docente experto en el área de Educación Física para Educación Básica Regular (CNEB). 
 
-Tu tarea es elaborar una UNIDAD DE APRENDIZAJE completa, rigurosa y alineada al Currículo Nacional (CNEB), siguiendo estrictamente la estructura y reglas del modelo proporcionado a continuación.
+Tu tarea es elaborar una UNIDAD DE APRENDIZAJE completa, rigurosa y alineada al Currículo Nacional (CNEB), siguiendo strictly la estructura y reglas del modelo proporcionado a continuación.
 
 DATOS OFICIALES EXTRAÍDOS DEL CNEB PARA UTILIZAR EN ESTA UNIDAD ({grado_u} - {ciclo_u}):
 {cneb_contexto}
@@ -312,11 +323,11 @@ Para cada una de las sesiones planificadas, detalla:
 - Fecha y espacio para firmas (Directora y Docente de Educación Física).
 
 Asegúrate de cumplir estrictamente la regla de negritas para el Estándar y Desempeño en la Matriz de Planificación.
+
+GENERA AHORA LA UNIDAD DE APRENDIZAJE COMPLETA Y DETALLADA SIGUIENDO EXACTAMENTE LAS 10 SECCIONES.
 """
 
-                pedido_u = f"Elabora la unidad completa según la estructura obligatoria para {grado_u} ({ciclo_u}). Problemática: {problema_u}"
-
-                response = generar_con_gemini(pedido_u, instrucciones_sistema=instrucciones_u)
+                response = generar_con_gemini(prompt_maestro)
                 
                 resultado_u = response.text
                 st.success("¡Unidad Curricular CNEB generada con éxito!")
