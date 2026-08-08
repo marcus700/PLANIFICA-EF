@@ -1,14 +1,14 @@
-import streamlit as st
-import google.generativeai as genai
-from docx import Document
-from docx.shared import Pt, RGBColor, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
 import io
-import time
 import re
+import time
+from docx import Document
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt, RGBColor
+import google.generativeai as genai
+import streamlit as st
 
-# Importamos la base de datos oficial CNEB completa y el helper de ciclo
+# Importamos la base de datos oficial CNEB completa y la función de ciclo
 from cneb_datos import CNEB_PRIMARIA, obtener_ciclo_primaria
 
 # --- LISTAS DE OPCIONES ---
@@ -34,12 +34,12 @@ COMPETENCIAS_EF = [
     "Interactúa a través de sus habilidades sociomotrices"
 ]
 
-# 1. Configuración de la Plataforma
+# 1. Configuración de la Plataforma Streamlit
 st.set_page_config(page_title="Generador CNEB Primaria", page_icon="🏃‍♂️", layout="centered")
 
 st.title("🏃 Generador CNEB - Educación Física (Primaria)")
 st.subheader("Con Estándares y Desempeños oficiales del MINEDU (1° a 6° de Primaria)")
-st.write("Herramienta inteligente para diseñar tus documentos curriculares al instante utilizando tu base de datos CNEB oficial.")
+st.write("Herramienta inteligente para diseñar tus documentos curriculares al instante utilizando la base de datos CNEB oficial.")
 
 # Configuramos la clave API
 try:
@@ -48,27 +48,33 @@ try:
 except Exception:
     st.error("🔑 No se encontró la variable GEMINI_API_KEY en los Secrets de Streamlit.")
 
-# FUNCIÓN DE GENERACIÓN CON GEMINI
+# FUNCIÓN DE GENERACIÓN CON GEMINI OPTIMIZADA (Alta precisión y sin recortes)
 def generar_con_gemini(prompt, instrucciones_sistema=""):
     modelos_a_probar = [
+        "gemini-1.5-pro",        # Intentar primero con el modelo Pro (más detallado)
+        "models/gemini-1.5-pro",
         "gemini-1.5-flash",
-        "models/gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "models/gemini-1.5-pro"
+        "models/gemini-1.5-flash"
     ]
+    
+    # Configuración para evitar resúmenes y permitir documentos largos completos
+    config_generacion = {
+        "temperature": 0.2,           # Menor aleatoriedad para máxima fidelidad al CNEB
+        "max_output_tokens": 8192     # Límite amplio para generar todas las tablas de las 10 secciones
+    }
     
     ultimo_error = None
     
     for nombre_modelo in modelos_a_probar:
         try:
             model = genai.GenerativeModel(model_name=nombre_modelo, system_instruction=instrucciones_sistema)
-            return model.generate_content(prompt)
+            return model.generate_content(prompt, generation_config=config_generacion)
         except Exception as e:
             error_msg = str(e)
             if "429" in error_msg or "quota" in error_msg.lower():
                 time.sleep(5)
                 try:
-                    return model.generate_content(prompt)
+                    return model.generate_content(prompt, generation_config=config_generacion)
                 except Exception as ex:
                     ultimo_error = ex
                     continue
@@ -90,7 +96,7 @@ def add_formatted_text(paragraph, text):
             paragraph.add_run(part)
 
 def render_markdown_table(doc, lines):
-    """Convierte líneas de tabla Markdown a tabla nativa de MS Word"""
+    """Convierte líneas de tabla Markdown a tabla nativa de MS Word con bordes y formato"""
     rows = []
     for line in lines:
         if '---' in line:
@@ -115,7 +121,7 @@ def render_markdown_table(doc, lines):
                 cell.text = ""
                 p = cell.paragraphs[0]
                 add_formatted_text(p, cell_value)
-                if i == 0:
+                if i == 0:  # Encabezado de la tabla en negrita
                     for run in p.runs:
                         run.bold = True
 
@@ -221,7 +227,7 @@ with tab1:
             try:
                 ciclo_u = obtener_ciclo_primaria(grado_u)
                 
-                # Base de datos oficial extraída de cneb_datos.py
+                # Extraemos la base de datos oficial del CNEB para el ciclo y grado seleccionados
                 cneb_contexto = ""
                 for comp_nombre, comp_data in CNEB_PRIMARIA.items():
                     est_texto = comp_data["estandares"].get(ciclo_u, "")
@@ -229,9 +235,9 @@ with tab1:
                     cneb_contexto += f"\n\nCOMPETENCIA: {comp_nombre}\nESTÁNDAR OFICIAL ({ciclo_u}):\n{est_texto}\nDESEMPEÑOS OFICIALES ({grado_u}):\n" + "\n".join(des_lista)
 
                 # ==============================================================================
-                # PROMPT MAESTRO INTEGRADO
+                # PROMPT MAESTRO COMPLETO INTEGRADO
                 # ==============================================================================
-                instrucciones_u = f"""
+                prompt_maestro = f"""
 Actúa como un especialista en currículo educativo peruano y docente experto en el área de Educación Física para Educación Básica Regular (CNEB). 
 
 Tu tarea es elaborar una UNIDAD DE APRENDIZAJE completa, rigurosa y alineada al Currículo Nacional (CNEB), siguiendo estrictamente la estructura y reglas del modelo proporcionado a continuación.
@@ -306,11 +312,11 @@ Para cada una de las sesiones planificadas, detalla:
 - Fecha y espacio para firmas (Directora y Docente de Educación Física).
 
 Asegúrate de cumplir estrictamente la regla de negritas para el Estándar y Desempeño en la Matriz de Planificación.
+
+GENERA AHORA LA UNIDAD DE APRENDIZAJE COMPLETA Y DETALLADA SIGUIENDO EXACTAMENTE LAS 10 SECCIONES.
 """
 
-                pedido_u = f"Elabora la unidad completa según la estructura obligatoria para {grado_u} ({ciclo_u}). Problemática: {problema_u}"
-
-                response = generar_con_gemini(pedido_u, instrucciones_sistema=instrucciones_u)
+                response = generar_con_gemini(prompt_maestro)
                 
                 resultado_u = response.text
                 st.success("¡Unidad Curricular CNEB generada con éxito!")
