@@ -312,11 +312,11 @@ Para cada una de las sesiones planificadas, detalla:
 - Fecha y espacio para firmas (Directora y Docente de Educación Física).
 
 Asegúrate de cumplir estrictamente la regla de negritas para el Estándar y Desempeño en la Matriz de Planificación.
-
-GENERA AHORA LA UNIDAD DE APRENDIZAJE COMPLETA Y DETALLADA SIGUIENDO EXACTAMENTE LAS 10 SECCIONES.
 """
 
-                response = generar_con_gemini(prompt_maestro)
+                pedido_u = f"Elabora la unidad completa según la estructura obligatoria para {grado_u} ({ciclo_u}). Problemática: {problema_u}"
+
+                response = generar_con_gemini(pedido_u, instrucciones_sistema=instrucciones_u)
                 
                 resultado_u = response.text
                 st.success("¡Unidad Curricular CNEB generada con éxito!")
