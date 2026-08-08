@@ -39,7 +39,7 @@ st.set_page_config(page_title="Generador CNEB Primaria", page_icon="🏃‍♂�
 
 st.title("🏃 Generador CNEB - Educación Física (Primaria)")
 st.subheader("Con Estándares y Desempeños oficiales del MINEDU (1° a 6° de Primaria)")
-st.write("Herramienta inteligente para diseñar tus documentos curriculares al instante utilizando la base de datos CNEB oficial.")
+st.write("Herramienta inteligente para diseñar tus documentos curriculares al instante utilizando tu base de datos CNEB oficial.")
 
 # Configuramos la clave API
 try:
@@ -198,19 +198,20 @@ with tab1:
     with st.form("form_unidad"):
         col1, col2 = st.columns(2)
         with col1:
+            num_unidad_u = st.text_input("🔢 N° de Unidad:", value="Unidad N° 04", key="u_num")
             grado_u = st.selectbox("🏫 Grado de Primaria:", GRADOS, key="u1")
             duracion_u = st.selectbox("⏱️ Duración de la Unidad:", DURACIONES_UNIDAD, key="u2")
             ie_u = st.text_input("🏢 Nombre de la I.E.:", value='N.° 22314 "Vicenta Aquije de Huamán"', key="u_ie")
             directora_u = st.text_input("👤 Directora:", value="Prof. Luisa Ruth Aronés Herrera", key="u_dir")
         with col2:
             docente_u = st.text_input("👨‍🏫 Docente de Ed. Física:", value="Mario A. García Torres", key="u_doc")
-            fechas_u = st.text_input("📅 Fechas / Periodo:", value="25 de mayo al 19 de junio del 2026", key="u_fechas")
+            fechas_u = st.text_input("📅 Fechas / Periodo:", value="22 de junio al 17 de julio de 2026", key="u_fechas")
             producto_u = st.text_input("🏆 Producto de la Unidad:", value="Festival Lúdico-Motor Peruanito", key="u_prod")
 
         problema_u = st.text_area(
-            "📋 Describe el problema del contexto o necesidad de los estudiantes:",
-            placeholder="Ej. Los estudiantes muestran dificultades en la orientación espacial y coordinación motriz en juegos grupales, y se requiere promover hábitos de higiene y normas consensuadas.",
-            value="Muchos amiguitos tienen dificultades para orientarse en el patio al desplazarse en grupo y poca comprensión de señales espaciales. Además, se requiere consolidar el hábito de lavado de manos e higiene al finalizar la actividad física.",
+            "📋 Describe la problemática o tema central a abordar:",
+            placeholder="Ej. Dificultades de coordinación motriz, orientación espacial, juegos tradicionales y hábitos de higiene",
+            value="Dificultades de coordinación motriz, orientación espacial en el patio, juegos tradicionales y falta de hábitos de higiene personal al concluir la actividad física.",
             key="u3"
         )
         boton_unidad = st.form_submit_button("📂 Generar Unidad de Aprendizaje en Word")
@@ -220,73 +221,94 @@ with tab1:
             try:
                 ciclo_u = obtener_ciclo_primaria(grado_u)
                 
-                # Extraemos la base de datos oficial del CNEB para el ciclo y grado
+                # Base de datos oficial extraída de cneb_datos.py
                 cneb_contexto = ""
                 for comp_nombre, comp_data in CNEB_PRIMARIA.items():
                     est_texto = comp_data["estandares"].get(ciclo_u, "")
                     des_lista = comp_data["desempenos"].get(grado_u, [])
                     cneb_contexto += f"\n\nCOMPETENCIA: {comp_nombre}\nESTÁNDAR OFICIAL ({ciclo_u}):\n{est_texto}\nDESEMPEÑOS OFICIALES ({grado_u}):\n" + "\n".join(des_lista)
 
+                # ==============================================================================
+                # PROMPT MAESTRO INTEGRADO
+                # ==============================================================================
                 instrucciones_u = f"""
-Actúa como un Especialista Curricular experto en Educación Física para Primaria bajo el enfoque oficial del CNEB del MINEDU de Perú.
-Tu tarea es diseñar una UNIDAD DE APRENDIZAJE completa, rigurosa y estructurada en exactamente 10 secciones obligatorias.
+Actúa como un especialista en currículo educativo peruano y docente experto en el área de Educación Física para Educación Básica Regular (CNEB). 
 
-BASE DE DATOS OFICIAL CNEB A UTILIZAR PARA {grado_u} ({ciclo_u}):
+Tu tarea es elaborar una UNIDAD DE APRENDIZAJE completa, rigurosa y alineada al Currículo Nacional (CNEB), siguiendo estrictamente la estructura y reglas del modelo proporcionado a continuación.
+
+DATOS OFICIALES EXTRAÍDOS DEL CNEB PARA UTILIZAR EN ESTA UNIDAD ({grado_u} - {ciclo_u}):
 {cneb_contexto}
 
-ESTRUCTURA OBLIGATORIA A GENERAR (en Markdown):
+DATOS PARA LA GENERACIÓN:
+- N° de Unidad: {num_unidad_u}
+- Ciclo / Grados: {ciclo_u} - {grado_u}
+- Nombre de la IE: {ie_u}
+- Nombre del Docente: {docente_u}
+- Nombre del Director(a): {directora_u}
+- Duración / Fechas: {duracion_u} - {fechas_u}
+- Tema central / Problemática a abordar: {problema_u}
+- Producto de la Unidad: {producto_u}
 
-# UNIDAD DE APRENDIZAJE N°.......
-### "[TÍTULO MOTIVADOR Y COMPLETO ENTRE COMILLAS]"
+---
 
-## II. DATOS INFORMATIVOS
-- **IE:** {ie_u}
-- **Directora:** {directora_u}
-- **Profesor:** {docente_u}
-- **Ciclo:** {ciclo_u}
-- **Grado y sección:** {grado_u}
-- **Duración:** {duracion_u} ({fechas_u})
+ESTRUCTURA OBLIGATORIA DE LA UNIDAD DE APRENDIZAJE:
 
-## III. SITUACIÓN SIGNIFICATIVA
-- Contextualizar la realidad: {problema_u}.
-- Incluir un dato cuantitativo o cualitativo sobre la problemática (ej. "solo el 35% logra...").
-- Formular 3 preguntas retadoras y desafiantes asociadas al desarrollo motriz y social.
-- Proponer la estrategia pedagógica para resolver los retos.
+1. TÍTULO DE LA UNIDAD
+- Debe ser motivador, entre comillas y redactado en función al desarrollo de competencias motrices o lúdicas.
 
-## IV. PRODUCTO DE LA UNIDAD
-- Describir el desempeño práctico o producto tangible: {producto_u}.
+2. II. DATOS INFORMATIVOS
+- IE, Directora, Profesor, Ciclo, Grado y Sección, Duración.
 
-## V. ENFOQUES TRANSVERSALES
-Genera una tabla con 2 enfoques transversales del CNEB:
-| Enfoque Transversal | Valor(es) | Acciones o Actitudes Observables |
+3. III. SITUACIÓN SIGNIFICATIVA
+- Contextualizar la realidad de los estudiantes relacionada con la problemática.
+- Incluir un dato cuantitativo/cualitativo del problema (ej. "solo el X% logra...").
+- Plantear 3 preguntas retadoras/desafiantes asociadas a la solución.
+- Proponer la estrategia pedagógica para resolver el reto (juegos, circuitos, festivales, etc.).
 
-## VI. COMPETENCIAS TRANSVERSALES
-Genera una tabla con "Gestiona su aprendizaje de manera autónoma" y "Se desenvuelve en entornos virtuales generados por las TIC" con sus Capacidades y Desempeños adaptados a Educación Física.
+4. IV. PRODUCTO DE LA UNIDAD
+- Describir un desempeño práctico o un producto tangible/demostrable claro donde el estudiante aplique lo aprendido.
 
-## VII. ESTÁNDARES, COMPETENCIAS Y CAPACIDADES DEL ÁREA DE EDUCACIÓN FÍSICA
-Transcribe las 3 competencias oficiales de Educación Física con sus capacidades y el ESTÁNDAR COMPLETO del {ciclo_u} provisto en la base de datos sin alterarlo.
+5. V. ENFOQUES TRANSVERSALES
+- Seleccionar 2 enfoques transversales del CNEB.
+- Especificar: Enfoque Transversal, Valor(es) y Acciones o Actitudes Observables adaptadas a Educación Física.
 
-## VIII. MATRIZ DE PLANIFICACIÓN (Formato Tabla detallado por sesión)
-REGLAS OBLIGATORIAS PARA CADA ACTIVIDAD DE LA MATRIZ:
-1. En la parte superior de cada actividad/sesión, coloca un bloque o fila con el ESTÁNDAR COMPLETO del CNEB correspondiente al {ciclo_u} (transcrito íntegramente de la base de datos oficial provista, sin modificar ni alterar el texto original), pero RESALTANDO EN NEGRITA únicamente la parte específica del estándar que se evalúa o trabaja en esa sesión.
-2. Columnas obligatorias de la tabla:
-   | Sesión N.° y Título de la sesión | Competencia / Capacidad | Desempeño | Criterios de Evaluación | Evidencia y Producto | Instrumento de Evaluación |
-3. REGLA DEL DESEMPEÑO: En la columna Desempeño, transcribe el desempeño COMPLETO del CNEB correspondiente a {grado_u}, RESALTANDO EN NEGRITA tanto la parte del desempeño utilizada como las palabras/términos precisados agregados para contextualizar la sesión.
-4. REGLA IMPORTANTE: NO incluyas la columna "Propósito" en esta tabla de matriz.
+6. VI. COMPETENCIAS TRANSVERSALES
+- Incluir "Gestiona su aprendizaje de manera autónoma" y "Se desenvuelve en entornos virtuales generados por las TIC" con sus respectivas Capacidades y Desempeños aplicados al área.
 
-## IX. SECUENCIA DE SESIONES
-Genera una tabla con las columnas:
-| N° | Título de la actividad | Propósito de la actividad | Representación gráfica |
-- El propósito debe incluir la secuencia metodológica (calentamiento, desarrollo motriz/juego, higiene personal y reflexión).
-- La representación gráfica describe brevemente el esquema visual o distribución de materiales en el patio.
+7. VII. ESTÁNDARES, COMPETENCIAS Y CAPACIDADES DEL ÁREA DE EDUCACIÓN FÍSICA
+- Incluir las 3 competencias del área con sus capacidades y estándares completos del ciclo correspondiente ({ciclo_u}):
+  * Competencia 1: Se desenvuelve de manera autónoma a través de su motricidad.
+  * Competencia 2: Asume una vida saludable.
+  * Competencia 3: Interactúa a través de sus habilidades sociomotrices.
 
-## X. RECURSOS
-- Recursos para el Docente (Normativa CNEB, RM N° 501-2025, Oficio Múltiple N° 00052-2026, etc.).
+8. VIII. MATRIZ DE PLANIFICACIÓN (Formato Tabla detallado por cada sesión)
+Estructura de la tabla por cada sesión/actividad:
+- En la parte superior de cada bloque/actividad, incluir la fila del ESTÁNDAR COMPLETO del CNEB correspondiente a la competencia evaluada, redactado de manera íntegra (sin modificar ni alterar su texto original), pero RESALTANDO EN NEGRITA la parte específica que se trabaja/evalúa en esa actividad.
+- Columnas de la Matriz:
+  1. Sesión N.° y Título de la sesión
+  2. Competencia / Capacidad
+  3. Desempeño (Redactado de manera COMPLETA tal cual aparece en el CNEB del ciclo, pero RESALTANDO EN NEGRITA tanto la parte del desempeño utilizada como las palabras/términos agregados para su precisión y contextualización).
+  4. Criterios de evaluación (mínimo 3 por sesión, precisados y observables)
+  5. Evidencia y Producto
+  6. Instrumento de evaluación (Lista de cotejo, Escala de valoración, Guía de observación, etc.)
+
+*NOTA: NO incluir la columna "Propósito" en la Matriz de Planificación.*
+
+9. IX. SECUENCIA DE SESIONES (Formato Tabla)
+Para cada una de las sesiones planificadas, detalla:
+- N° y Título de la actividad
+- Propósito de la actividad (explicando la secuencia metodológica: calentamiento, desarrollo motriz/deportivo, hábitos de higiene y reflexión).
+- Representación gráfica (descripción breve del gráfico o material visual sugerido).
+
+10. X. RECURSOS
+- Recursos para el Docente (Normativa CNEB, documentos vigentes, materiales).
 - Recursos para el Estudiante (Kit de aseo, ropa deportiva, materiales específicos).
 - Fecha y espacio para firmas (Directora y Docente de Educación Física).
+
+Asegúrate de cumplir estrictamente la regla de negritas para el Estándar y Desempeño en la Matriz de Planificación.
 """
 
-                pedido_u = f"Genera la unidad completa para {grado_u} ({ciclo_u}), duración {duracion_u}. Problema: {problema_u}. Producto: {producto_u}"
+                pedido_u = f"Elabora la unidad completa según la estructura obligatoria para {grado_u} ({ciclo_u}). Problemática: {problema_u}"
 
                 response = generar_con_gemini(pedido_u, instrucciones_sistema=instrucciones_u)
                 
