@@ -48,33 +48,22 @@ try:
 except Exception:
     st.error("🔑 No se encontró la variable GEMINI_API_KEY en los Secrets de Streamlit.")
 
-# FUNCIÓN DE GENERACIÓN CON GEMINI MULTIMODELO (Soporta Gemini 3.6 Flash, 3.5 Flash, 2.5 y 2.0)
+# FUNCIÓN DE GENERACIÓN CON GEMINI OPTIMIZADA (Configuración estricta anti-resumen)
 def generar_con_gemini(prompt, instrucciones_sistema=""):
-    # Lista priorizada con los últimos modelos de la familia Gemini
     modelos_a_probar = [
-        "gemini-3.6-flash",
-        "models/gemini-3.6-flash",
-        "gemini-3.5-flash",
-        "models/gemini-3.5-flash",
-        "gemini-3-flash",
-        "models/gemini-3-flash",
-        "gemini-2.5-pro",
-        "models/gemini-2.5-pro",
-        "gemini-2.5-flash",
-        "models/gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "models/gemini-2.0-flash",
         "gemini-1.5-pro",
         "models/gemini-1.5-pro",
+        "gemini-2.5-pro",
+        "models/gemini-2.5-pro",
         "gemini-1.5-flash",
         "models/gemini-1.5-flash"
     ]
     
-    # Configuración para alta precisión pedagógica y texto sin recortar
-    config_generacion = {
-        "temperature": 0.2,           # Menor aleatoriedad para máxima fidelidad al CNEB
-        "max_output_tokens": 8192     # Límite amplio para generar todas las tablas de las 10 secciones
-    }
+    # Objeto de configuración estricto de la librería oficial
+    config_generacion = genai.types.GenerationConfig(
+        temperature=0.1,          # Baja temperatura para máxima precisión y cero inventiva
+        max_output_tokens=8192    # Token máximo ampliado para no cortar tablas
+    )
     
     ultimo_error = None
     
@@ -236,7 +225,7 @@ with tab1:
         boton_unidad = st.form_submit_button("📂 Generar Unidad de Aprendizaje en Word")
 
     if boton_unidad and problema_u:
-        with st.spinner("Escribiendo la unidad didáctica oficial CNEB con el modelo más avanzado..."):
+        with st.spinner("Escribiendo la unidad didáctica oficial CNEB completa y sin resúmenes..."):
             try:
                 ciclo_u = obtener_ciclo_primaria(grado_u)
                 
@@ -247,11 +236,17 @@ with tab1:
                     des_lista = comp_data["desempenos"].get(grado_u, [])
                     cneb_contexto += f"\n\nCOMPETENCIA: {comp_nombre}\nESTÁNDAR OFICIAL ({ciclo_u}):\n{est_texto}\nDESEMPEÑOS OFICIALES ({grado_u}):\n" + "\n".join(des_lista)
 
-                # PROMPT MAESTRO COMPLETO INTEGRADO
+                # PROMPT MAESTRO CON REGLAS ANTI-RESUMEN
                 prompt_maestro = f"""
 Actúa como un especialista en currículo educativo peruano y docente experto en el área de Educación Física para Educación Básica Regular (CNEB). 
 
-Tu tarea es elaborar una UNIDAD DE APRENDIZAJE completa, rigurosa y alineada al Currículo Nacional (CNEB), siguiendo strictly la estructura y reglas del modelo proporcionado a continuación.
+Tu tarea es elaborar una UNIDAD DE APRENDIZAJE completa, extensa, rigurosa y alineada al Currículo Nacional (CNEB), siguiendo estrictamente las 10 secciones obligatorias y las reglas anti-resumen.
+
+🚨 REGLAS CRÍTICAS ANTI-RESUMEN (CUMPLIMIENTO OBLIGATORIO):
+1. NO RESUMAS, NO ABREVIES Y NO OMITAS NINGUNA SECCIÓN NI NINGUNA SESIÓN.
+2. EN LA SECCIÓN VIII (MATRIZ DE PLANIFICACIÓN) DEBES DESARROLLAR OBLIGATORIAMENTE LAS 4 SESIONES O ACTIVIDADES COMPLETAS. ESTÁ PROHIBIDO PONER PUNTOS SUSPENSIVOS (...), RESÚMENES O FRASES COMO "se repite para las siguientes sesiones".
+3. TRANSCRIBE EL ESTÁNDAR COMPLETO DEL CNEB EN CADA BLOQUE DE ACTIVIDAD DE LA MATRIZ SIN RECORTAR TEXTO, RESALTANDO EN NEGRITA LA PARTE EVALUADA.
+4. TRANSCRIBE EL DESEMPEÑO COMPLETO DEL CNEB EN LA COLUMNA DE DESEMPEÑO SIN RECORTAR TEXTO, RESALTANDO EN NEGRITA LA PARTE UTILIZADA Y LOS TÉRMINOS PRECISADOS AGREGADOS.
 
 DATOS OFICIALES EXTRAÍDOS DEL CNEB PARA UTILIZAR EN ESTA UNIDAD ({grado_u} - {ciclo_u}):
 {cneb_contexto}
@@ -278,7 +273,7 @@ ESTRUCTURA OBLIGATORIA DE LA UNIDAD DE APRENDIZAJE:
 
 3. III. SITUACIÓN SIGNIFICATIVA
 - Contextualizar la realidad de los estudiantes relacionada con la problemática.
-- Incluir un dato cuantitativo/cualitativo del problema (ej. "solo el X% logra...").
+- Incluir un dato cuantitativo/cualitativo del problema (ej. "solo el 35% logra...").
 - Plantear 3 preguntas retadoras/desafiantes asociadas a la solución.
 - Proponer la estrategia pedagógica para resolver el reto (juegos, circuitos, festivales, etc.).
 
@@ -287,24 +282,24 @@ ESTRUCTURA OBLIGATORIA DE LA UNIDAD DE APRENDIZAJE:
 
 5. V. ENFOQUES TRANSVERSALES
 - Seleccionar 2 enfoques transversales del CNEB.
-- Especificar: Enfoque Transversal, Valor(es) y Acciones o Actitudes Observables adaptadas a Educación Física.
+- Especificar en tabla: Enfoque Transversal, Valor(es) y Acciones o Actitudes Observables adaptadas a Educación Física.
 
 6. VI. COMPETENCIAS TRANSVERSALES
-- Incluir "Gestiona su aprendizaje de manera autónoma" y "Se desenvuelve en entornos virtuales generados por las TIC" con sus respectivas Capacidades y Desempeños aplicados al área.
+- Incluir en tabla "Gestiona su aprendizaje de manera autónoma" y "Se desenvuelve en entornos virtuales generados por las TIC" con sus respectivas Capacidades y Desempeños aplicados al área.
 
 7. VII. ESTÁNDARES, COMPETENCIAS Y CAPACIDADES DEL ÁREA DE EDUCACIÓN FÍSICA
-- Incluir las 3 competencias del área con sus capacidades y estándares completos del ciclo correspondiente ({ciclo_u}):
+- Transcribir las 3 competencias del área con sus capacidades y estándares completos del ciclo correspondiente ({ciclo_u}):
   * Competencia 1: Se desenvuelve de manera autónoma a través de su motricidad.
   * Competencia 2: Asume una vida saludable.
   * Competencia 3: Interactúa a través de sus habilidades sociomotrices.
 
-8. VIII. MATRIZ DE PLANIFICACIÓN (Formato Tabla detallado por cada sesión)
-Estructura de la tabla por cada sesión/actividad:
-- En la parte superior de cada bloque/actividad, incluir la fila del ESTÁNDAR COMPLETO del CNEB correspondiente a la competencia evaluada, redactado de manera íntegra (sin modificar ni alterar su texto original), pero RESALTANDO EN NEGRITA la parte específica que se trabaja/evalúa en esa actividad.
-- Columnas de la Matriz:
+8. VIII. MATRIZ DE PLANIFICACIÓN (Formato Tabla detallado por las 4 sesiones)
+Desarrolla 4 bloques de tablas independientes (uno por cada sesión/actividad):
+- En la parte superior de cada bloque de sesión, incluye la fila con el ESTÁNDAR COMPLETO del CNEB correspondiente a la competencia evaluada, redactado de manera íntegra (sin modificar ni alterar su texto original), RESALTANDO EN NEGRITA la parte específica que se trabaja/evalúa en esa actividad.
+- Columnas de la Matriz por cada sesión:
   1. Sesión N.° y Título de la sesión
   2. Competencia / Capacidad
-  3. Desempeño (Redactado de manera COMPLETA tal cual aparece en el CNEB del ciclo, pero RESALTANDO EN NEGRITA tanto la parte del desempeño utilizada como las palabras/términos agregados para su precisión y contextualización).
+  3. Desempeño (Redactado de manera COMPLETA tal cual aparece en el CNEB, RESALTANDO EN NEGRITA tanto la parte del desempeño utilizada como las palabras/términos agregados para su precisión y contextualización).
   4. Criterios de evaluación (mínimo 3 por sesión, precisados y observables)
   5. Evidencia y Producto
   6. Instrumento de evaluación (Lista de cotejo, Escala de valoración, Guía de observación, etc.)
@@ -312,19 +307,17 @@ Estructura de la tabla por cada sesión/actividad:
 *NOTA: NO incluir la columna "Propósito" en la Matriz de Planificación.*
 
 9. IX. SECUENCIA DE SESIONES (Formato Tabla)
-Para cada una de las sesiones planificadas, detalla:
+Genera una tabla completa para las 4 sesiones detallando:
 - N° y Título de la actividad
 - Propósito de la actividad (explicando la secuencia metodológica: calentamiento, desarrollo motriz/deportivo, hábitos de higiene y reflexión).
-- Representación gráfica (descripción breve del gráfico o material visual sugerido).
+- Representación gráfica (descripción breve del gráfico o material visual sugerido en el patio).
 
 10. X. RECURSOS
 - Recursos para el Docente (Normativa CNEB, documentos vigentes, materiales).
 - Recursos para el Estudiante (Kit de aseo, ropa deportiva, materiales específicos).
 - Fecha y espacio para firmas (Directora y Docente de Educación Física).
 
-Asegúrate de cumplir estrictamente la regla de negritas para el Estándar y Desempeño en la Matriz de Planificación.
-
-GENERA AHORA LA UNIDAD DE APRENDIZAJE COMPLETA Y DETALLADA SIGUIENDO EXACTAMENTE LAS 10 SECCIONES.
+RECUERDA: DESARROLLA CADA UNA DE LAS 4 SESIONES EN LA MATRIZ DE PLANIFICACIÓN Y EN LA SECUENCIA DE SESIONES SIN OMISIONES NI RESÚMENES.
 """
 
                 response = generar_con_gemini(prompt_maestro)
